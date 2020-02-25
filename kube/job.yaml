@@ -1,0 +1,42 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: gbv-bailer
+spec:
+  schedule: "0 13 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: gbv-bailer
+            image: vlabresearch/bailer:0.0.3
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "500Mi"
+            envFrom:
+            - secretRef:
+                name: gbv-bot-envs
+            env:
+            - name: CHATBASE_DATABASE
+              value: "chatroach"
+            - name: CHATBASE_USER
+              value: "chatroach"
+            - name: CHATBASE_PASSWORD
+              value: ""
+            - name: CHATBASE_HOST
+              value: "gbv-cockroachdb-public.default"
+            - name: CHATBASE_PORT
+              value: "26257"
+            - name: BOTSERVER_URL
+              value: "http://gbv-botserver"
+            - name: BAILER_HOURS
+              value: "12"
+            - name: BAILER_DAYS
+              value: "6"
+            - name: BAILER_FORM_ENG
+              value: "bailout_eng"
+            - name: BAILER_FORM_HINDI
+              value: "bailout_hindi"
