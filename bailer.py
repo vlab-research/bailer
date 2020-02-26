@@ -47,8 +47,10 @@ def get_times(df):
 
     userid = df.userid.iloc[0]
     lang = df.lang.iloc[0]
-    last_active = df.timestamp.max()
-    return pd.DataFrame([{ 'userid': userid, 'lang': lang, 'time': timestamp, 'pause': next_seen - last_seen, 'last_active': last_active }])
+
+    continuation = df.iloc[args[-1]:].shape[0]
+
+    return pd.DataFrame([{ 'userid': userid, 'lang': lang, 'time': timestamp, 'pause': next_seen - last_seen, 'continuation': continuation }])
 
 
 def get_blocked(df, hours):
@@ -75,7 +77,7 @@ def get_blocked(df, hours):
 
     affected = pd.concat([eng_affected, hindi_affected]).reset_index(drop=True).sort_values(['userid', 'timestamp'])
     pauses = affected.groupby('userid').apply(get_times).reset_index(drop=True)
-    blocked = pauses[pauses.pause > 1000*60*60*hours].reset_index(drop=True)
+    blocked = pauses[(pauses.pause > 1000*60*60*hours) & (pauses.continuation < 6)].reset_index(drop=True)
 
     return blocked
 
