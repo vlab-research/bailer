@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: gbv-bailer
 spec:
-  schedule: "0 13 * * *"
+  schedule: "0 */6 * * *"
   jobTemplate:
     spec:
       template:
@@ -11,7 +11,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: gbv-bailer
-            image: vlabresearch/bailer:0.0.3
+            image: vlabresearch/bailer:0.0.4
             resources:
               requests:
                 cpu: "500m"
@@ -33,9 +33,9 @@ spec:
             - name: BOTSERVER_URL
               value: "http://gbv-botserver"
             - name: BAILER_HOURS
-              value: "12"
+              value: "168"
             - name: BAILER_DAYS
-              value: "6"
+              value: "7"
             - name: BAILER_FORM_ENG
               value: "bailout_eng"
             - name: BAILER_FORM_HINDI
