@@ -28,8 +28,12 @@ def get_df(conn_string):
     dat = ({**json.loads(r['content']), 'userid': r['userid']} for r in dat)
     dat = (dissoc(d, 'recipient', 'sender') for d in dat)
     dat = ({**d, 'text': get_in(['message', 'text'], d), 'ref': get_ref(d)} for d in dat)
-    dat = (dissoc(d, 'message', 'referral', 'user', 'page', 'event', 'postback') for d in dat)
+    dat = ({**d, 'event_type': get_in(['event', 'type'], d), 'ref': get_ref(d)} for d in dat)
+    dat = (dissoc(d, 'message', 'referral', 'user', 'page', 'postback', 'event', 'data') for d in dat)
     return pd.DataFrame(list(dat))
+
+def current_timestamp():
+    return int(time.mktime(datetime.datetime.now().timetuple())) * 1000
 
 def get_times(df):
     df = df.sort_values('timestamp')
@@ -39,15 +43,20 @@ def get_times(df):
     try:
         next_seen = df.iloc[args[-1] + 1].timestamp
     except IndexError:
-        next_seen = int(time.mktime(datetime.datetime.now().timetuple())) * 1000
+        next_seen = current_timestamp()
 
     userid = df.userid.iloc[0]
     lang = df.lang.iloc[0]
-    return pd.DataFrame([{ 'userid': userid, 'lang': lang, 'time': timestamp, 'pause': next_seen - last_seen}])
+    last_active = df.timestamp.max()
+    return pd.DataFrame([{ 'userid': userid, 'lang': lang, 'time': timestamp, 'pause': next_seen - last_seen, 'last_active': last_active }])
 
 
 def get_blocked(df, hours):
     df = df.copy()
+
+    previously_bailed = df[df['event_type'] == 'bailout'].userid.unique()
+    df = df[~df.userid.isin(previously_bailed)]
+    df = df[(df.source == 'messenger') & df.text.notna()].reset_index(drop=True)
 
     engs = df.text.str.contains('Hey! Have a look at these videos') == True
     hindis = df.text.str.contains('Kripaya is sandesh ko Messenger par apne mitron ko bhejen') == True
@@ -100,6 +109,8 @@ def main():
     df = get_df(conn_string())
     blocked = get_blocked(df, BAILER_HOURS)
     bails = get_bailouts(blocked, BAILER_DAYS)
+
+    print(f'BAILING OUT {bails.shape[0]} USERS')
 
     for i,r in bails.iterrows():
         bailout(r.userid, r.lang)
