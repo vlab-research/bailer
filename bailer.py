@@ -8,6 +8,7 @@ import numpy as np
 import requests
 from toolz import dissoc, get_in
 
+EXECUTE = os.getenv('BAILER_EXECUTE')
 BOTSERVER_URL = os.getenv('BOTSERVER_URL')
 FB_PAGE_ID = os.getenv('FB_PAGE_ID')
 BAILER_HOURS = float(os.getenv('BAILER_HOURS'))
@@ -104,8 +105,10 @@ def bailout(user, lang):
     form = FORMS[lang]
     page = FB_PAGE_ID
     dat = _bail(page, user, form)
-    res = requests.post(f'{BOTSERVER_URL}/synthetic', json=dat)
-    return res
+    if EXECUTE:
+        return requests.post(f'{BOTSERVER_URL}/synthetic', json=dat)
+    else:
+        print(dat)
 
 def main():
     df = get_df(conn_string())
